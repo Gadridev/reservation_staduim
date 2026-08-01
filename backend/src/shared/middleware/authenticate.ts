@@ -9,6 +9,7 @@ export async function authenticate(
   _res: Response,
   next: NextFunction
 ) {
+  console.log("enter")
   try {
     const authHeader = req.headers.authorization;
 
