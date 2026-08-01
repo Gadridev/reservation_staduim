@@ -2,6 +2,7 @@ import express from "express";
 // import cors from "cors";
 import authRoutes from "./modules/auth/auth.routes.js";
 import { errorHandler } from "./shared/errors/errorHandler.js";
+import stadiumRoutes from "./modules/stadium/stadium.routes.js"
 
 
 const app = express();
@@ -17,7 +18,8 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/stadiums", stadiumRoutes);
 
-app.use(errorHandler); // خاص يبقى آخر middleware
+app.use(errorHandler); 
 
 export default app;

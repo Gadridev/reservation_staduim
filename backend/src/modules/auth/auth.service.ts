@@ -6,17 +6,18 @@ interface getMe {
     userId:string
 }
 export async function registerUser(input: RegisterInput) {
-  const existingUser = await User.findOne({ email: input.email });
-  if (existingUser) {
-    throw new AppError("Email is already registered", 409);
-  }
+  // const existingUser = await User.findOne({ email: input.email });
+  // if (existingUser) {
+  //   throw new AppError("Email is already registered", 409);
+  // }
+  console.log(input)
 
   const user = await User.create({
     firstName: input.firstName,
     lastName: input.lastName,
     email: input.email,
     password: input.password,
-    // role غير مربوط بالـ input — دايما PLAYER بشكل افتراضي
+
   });
 
   return {
