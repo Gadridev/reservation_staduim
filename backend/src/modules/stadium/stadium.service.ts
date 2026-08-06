@@ -1,4 +1,3 @@
-import { DEFAULT_WORKING_HOURS } from "../../shared/constants/defaultWorkingHours.js";
 import { AppError } from "../../shared/errors/AppError.js";
 import { Stadium } from "./stadium.model.js";
 import type { CreateStadiumInput, UpdateStadiumInput } from "./stadium.validation.js";
@@ -7,7 +6,7 @@ import type mongoose from "mongoose";
 // import mongoose from "mongoose"
 
 export async function createStadium(
-  ownerId: mongoose.Types.ObjectId,
+    ownerId: mongoose.Types.ObjectId,
   input: CreateStadiumInput,
 ) {
   const existingStadium = await Stadium.findOne({
@@ -47,7 +46,6 @@ export async function getStadiumById(id: string) {
   if (!stadium) {
     throw new AppError("Stadium not found", 404);
   }
-
   return stadium;
 }
 export async function getMyStadiums(ownerId: mongoose.Types.ObjectId) {

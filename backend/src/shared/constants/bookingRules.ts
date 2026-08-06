@@ -1,0 +1,5 @@
+export const BOOKING_RULES = {
+  DURATION_HOURS: 1,
+  MAX_ADVANCE_BOOKING_DAYS: 7,
+  HOURS_IN_MS: 60 * 60 * 1000, 
+} as const;
