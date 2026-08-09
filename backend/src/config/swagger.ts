@@ -119,6 +119,15 @@ const options: swaggerJsdoc.Options = {
         },
       },
     },
+    Pagination: {
+      type: "object",
+      properties: {
+        page: { type: "integer", example: 1 },
+        limit: { type: "integer", example: 10 },
+        total: { type: "integer", example: 23 },
+        totalPages: { type: "integer", example: 3 },
+      },
+    },
     security: [{ bearerAuth: [] }],
   },
   apis: ["./src/modules/**/*.routes.ts"],

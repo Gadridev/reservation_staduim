@@ -11,6 +11,9 @@ export interface IBooking extends Document {
   currency: string;
   status: BookingStatus;
   cancelledAt: Date | null;
+  cancelledBy: mongoose.Types.ObjectId | null;
+  cancellationReason: string | null;
+   completedAt: Date | null;
 }
 
 const bookingSchema = new Schema<IBooking>(
@@ -36,7 +39,17 @@ const bookingSchema = new Schema<IBooking>(
       enum: ["CONFIRMED", "CANCELLED", "COMPLETED"],
       default: "CONFIRMED",
     },
+    cancelledBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    cancellationReason: {
+      type: String,
+      default: null,
+    },
     cancelledAt: { type: Date, default: null },
+    completedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );
