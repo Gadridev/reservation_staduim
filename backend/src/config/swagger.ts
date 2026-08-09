@@ -141,6 +141,18 @@ const options: swaggerJsdoc.Options = {
         updatedAt: { type: "string", format: "date-time" },
       },
     },
+    Image: {
+      type: "object",
+      properties: {
+        id: { type: "string" },
+        url: { type: "string", format: "uri" },
+        isPrimary: { type: "boolean" },
+        isDefault: {
+          type: "boolean",
+          description: "true إلا كانت من الصور الافتراضية (fallback)",
+        },
+      },
+    },
     security: [{ bearerAuth: [] }],
   },
   apis: ["./src/modules/**/*.routes.ts"],
