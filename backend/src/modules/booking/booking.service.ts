@@ -3,8 +3,9 @@ import { Booking } from "./booking.model.js";
 import { Stadium } from "../stadium/stadium.model.js";
 import { AppError } from "../../shared/errors/AppError.js";
 import { BOOKING_RULES } from "../../shared/constants/bookingRules.js";
-import type { CreateBookingInput } from "./booking.validation.js";
+import type { CancelBookingInput, CreateBookingInput } from "./booking.validation.js";
 import { toTimeString } from "../../utils/date.js";
+import type { BookingListQuery } from "./booking.validation.js";
 
 
 
@@ -28,12 +29,12 @@ export async function createBooking(
   // 6. startAt is not in the past
   const now = new Date();
   //convert time to minute
-  const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-  const startAtInMinutes = startAt.getHours() * 60 + startAt.getMinutes();
+  // const nowInMinutes = now.getHours() * 60 + now.getMinutes();
+  // const startAtInMinutes = startAt.getHours() * 60 + startAt.getMinutes();
 
-  if (startAtInMinutes < nowInMinutes) {
-    throw new AppError("Booking time must be in the future", 400);
-  }
+  if (startAt.getTime() <= now.getTime()) {
+  throw new AppError("Booking time must be in the future", 400);
+}
 
   // 7. startAt is within the next N days
   const maxDate = new Date(now);
@@ -124,4 +125,188 @@ export async function createBooking(
 
   // 15. Return booking
   return booking;
+}
+
+
+interface AuthUser {
+  _id: mongoose.Types.ObjectId;
+  role: "PLAYER" | "OWNER" | "ADMIN";
+}
+
+export async function getBookingById(bookingId: string, user: AuthUser) {
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  if (user.role === "PLAYER") {
+    if (booking.playerId.toString() !== user._id.toString()) {
+      throw new AppError("You do not have permission to view this booking", 403);
+    }
+  } else if (user.role === "OWNER") {
+    const stadium = await Stadium.findById(booking.stadiumId);
+    if (!stadium || stadium.ownerId.toString() !== user._id.toString()) {
+      throw new AppError("You do not have permission to view this booking", 403);
+    }
+  }
+  // ADMIN: بلا أي تحقق إضافي
+
+  await booking.populate([
+    { path: "stadiumId", select: "name" },
+    { path: "playerId", select: "firstName lastName" },
+  ]);
+
+  return booking;
+}
+
+export async function getMyBookings(playerId: mongoose.Types.ObjectId, query: BookingListQuery) {
+  const filter: Record<string, unknown> = { playerId };
+  if (query.status) filter.status = query.status;
+
+  const skip = (query.page - 1) * query.limit;
+
+  const [bookings, total] = await Promise.all([
+    Booking.find(filter)
+      .sort({ startAt: -1 })
+      .skip(skip)
+      .limit(query.limit)
+      .populate("stadiumId", "name"),
+    Booking.countDocuments(filter),
+  ]);
+
+  return {
+    bookings,
+    pagination: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.max(Math.ceil(total / query.limit), 1),
+    },
+  };
+}
+
+export async function getStadiumBookings(
+  stadiumId: string,
+  user: AuthUser,
+  query: BookingListQuery
+) {
+  if (!mongoose.Types.ObjectId.isValid(stadiumId)) {
+    throw new AppError("Stadium not found", 404);
+  }
+
+  const stadium = await Stadium.findById(stadiumId);
+
+  if (!stadium) {
+    throw new AppError("Stadium not found", 404);
+  }
+
+  if (user.role === "OWNER" && stadium.ownerId.toString() !== user._id.toString()) {
+    throw new AppError("You do not have permission to view bookings for this stadium", 403);
+  }
+  // ADMIN: بلا تحقق ownership
+
+  const filter: Record<string, unknown> = { stadiumId: stadium._id };
+  if (query.status) filter.status = query.status;
+
+  const skip = (query.page - 1) * query.limit;
+
+  const [bookings, total] = await Promise.all([
+    Booking.find(filter)
+      .sort({ startAt: -1 })
+      .skip(skip)
+      .limit(query.limit)
+      .populate("playerId", "firstName lastName"),
+    Booking.countDocuments(filter),
+  ]);
+
+  return {
+    bookings,
+    pagination: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.max(Math.ceil(total / query.limit), 1),
+    },
+  };
+}
+export async function cancelBooking(
+  bookingId: string,
+  user: AuthUser,
+  input: CancelBookingInput
+) {
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  const booking = await Booking.findById(bookingId);
+
+  if (!booking) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  // Authorization
+  if (user.role === "PLAYER") {
+    if (booking.playerId.toString() !== user._id.toString()) {
+      throw new AppError("You do not have permission to cancel this booking", 403);
+    }
+  } else if (user.role === "OWNER") {
+    throw new AppError("You do not have permission to cancel this booking", 403);
+  }
+  // ADMIN: بلا تحقق إضافي
+
+  // Status rules
+  if (booking.status === "CANCELLED") {
+    throw new AppError("This booking is already cancelled", 409);
+  }
+
+  if (booking.status === "COMPLETED") {
+    throw new AppError("Completed bookings cannot be cancelled", 409);
+  }
+
+  // Time rule — PLAYER only, ADMIN bypasses
+  if (user.role === "PLAYER") {
+    const deadline = new Date(
+      booking.startAt.getTime() - BOOKING_RULES.CANCELLATION_DEADLINE_HOURS * 60 * 60 * 1000
+    );
+
+    if (Date.now() > deadline.getTime()) {
+      throw new AppError(
+        "Bookings can only be cancelled at least 2 hours before the start time",
+        400
+      );
+    }
+  }
+
+  booking.status = "CANCELLED";
+  booking.cancelledAt = new Date();
+  booking.cancelledBy = user._id;
+  booking.cancellationReason = input.reason;
+
+  await booking.save();
+
+  return booking;
+}
+
+export async function completeExpiredBookings(): Promise<number> {
+  const now = new Date();
+
+  const result = await Booking.updateMany(
+    {
+      status: "CONFIRMED",
+      endAt: { $lte: now },
+    },
+    {
+      $set: {
+        status: "COMPLETED",
+        completedAt: now,
+      },
+    }
+  );
+
+  return result.modifiedCount;
 }
