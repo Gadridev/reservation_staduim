@@ -1,23 +1,22 @@
 import { User } from "./auth.model.js";
 import { AppError } from "../../shared/errors/AppError.js";
-import type { RegisterInput,LoginInput } from "./auth.validation.js";
+import type { RegisterInput, LoginInput } from "./auth.validation.js";
 import { generateToken } from "../../utils/jwt.js";
 interface getMe {
-    userId:string
+  userId: string;
 }
 export async function registerUser(input: RegisterInput) {
   // const existingUser = await User.findOne({ email: input.email });
   // if (existingUser) {
   //   throw new AppError("Email is already registered", 409);
   // }
-  console.log(input)
+  console.log(input);
 
   const user = await User.create({
     firstName: input.firstName,
     lastName: input.lastName,
     email: input.email,
     password: input.password,
-
   });
 
   return {
@@ -34,14 +33,16 @@ export async function loginUser(input: LoginInput) {
   if (!user) {
     throw new AppError("Invalid email or password", 401);
   }
-
+  
   const isPasswordValid = await user.comparePassword(input.password);
-
+  
   if (!isPasswordValid) {
     throw new AppError("Invalid email or password", 401);
-
   }
-    const token = generateToken({ userId: user._id.toString() });
+  if (!user.isActive) {
+    throw new AppError("Your account is inactive", 403);
+  }
+  const token = generateToken({ userId: user._id.toString() });
 
   return {
     token,
