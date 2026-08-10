@@ -47,6 +47,7 @@ const options: swaggerJsdoc.Options = {
               type: "string",
               enum: ["PLAYER", "OWNER", "ADMIN"],
             },
+            isActive: { type: "boolean" },
           },
         },
         WorkingHour: {

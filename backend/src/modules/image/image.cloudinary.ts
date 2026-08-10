@@ -19,7 +19,8 @@ export function uploadBuffer(
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
-        resource_type: "image"
+        resource_type: "image",
+        folder:"stadiums"
       },
       (error, result) => {
         if (error || !result) {

@@ -6,6 +6,7 @@ import { errorHandler } from "./shared/errors/errorHandler.js";
 import stadiumRoutes from "./modules/stadium/stadium.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import reviewRoutes from "./modules/review/review.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
 
 
 import { swaggerSpec } from "./config/swagger.js";
@@ -31,6 +32,7 @@ app.use("/api/stadiums", stadiumRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/stadiums/:stadiumId/images", imageRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use(errorHandler);
 
