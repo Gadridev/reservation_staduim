@@ -4,6 +4,7 @@ import { Stadium } from "../src/modules/stadium/stadium.model.js";
 import { Booking } from "../src/modules/booking/booking.model.js";
 import { DEFAULT_WORKING_HOURS } from "../src/shared/constants/defaultWorkingHours.js";
 import { generateToken } from "../src/utils/jwt.js";
+import { Conversation } from "../src/modules/conversation/conversation.model.js";
 
 export async function createTestUser(role: "PLAYER" | "OWNER" | "ADMIN" = "PLAYER") {
   const user = await User.create({
@@ -62,4 +63,11 @@ export async function createTestBooking(
   });
 
   return booking;
+}
+export async function createTestConversation(
+  playerId: mongoose.Types.ObjectId,
+  ownerId: mongoose.Types.ObjectId,
+  stadiumId: mongoose.Types.ObjectId
+) {
+  return Conversation.create({ playerId, ownerId, stadiumId });
 }
