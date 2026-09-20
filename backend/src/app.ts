@@ -13,10 +13,19 @@ import { swaggerSpec } from "./config/swagger.js";
 import imageRoutes from "./modules/image/image.routes.js";
 
 const app = express();
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  }),
+);
 
-// app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
-
 app.get("/health", (_req, res) => {
   res.status(200).json({
     status: "ok",

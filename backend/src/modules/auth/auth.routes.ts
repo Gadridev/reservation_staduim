@@ -1,7 +1,6 @@
 import { Router } from "express";
-import {  login, register } from "./auth.controller.js";
-
-import { loginSchema, registerSchema } from "./auth.validation.js";
+import { getMe, login, register,updatePassword, updateUser } from "./auth.controller.js";
+import { loginSchema, registerSchema, updatePasswordSchema, updateUserSchema } from "./auth.validation.js";
 import { validate } from "../../shared/middleware/validate.js";
 import { authenticate } from "../../shared/middleware/authenticate.js";
 import { authorize } from "../../shared/middleware/authorize.js";
@@ -48,7 +47,7 @@ const router = Router();
  *           application/json:
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
-router.post("/register", validate(registerSchema), register);
+router.post("/register",validate(registerSchema), register);
 
 /**
  * @openapi
@@ -88,10 +87,15 @@ router.post("/register", validate(registerSchema), register);
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
 router.post("/login", validate(loginSchema), login);
+//get me route
+router.get("/me", authenticate, getMe);
+//update password
+router.put("/password", authenticate, validate(updatePasswordSchema), updatePassword);
+//update user
+router.put("/updateUser", authenticate, validate(updateUserSchema), updateUser);
 
 router.get("/owner-only", authenticate, authorize("OWNER"), (req, res) => {
   res.json({ success: true, data: { message: "Welcome, owner!" } });
 });
-
 
 export default router;
