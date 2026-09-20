@@ -1,14 +1,32 @@
 import express from "express";
-// import cors from "cors";
+import swaggerUi from "swagger-ui-express";
+import cors from "cors";
 import authRoutes from "./modules/auth/auth.routes.js";
 import { errorHandler } from "./shared/errors/errorHandler.js";
-
+import stadiumRoutes from "./modules/stadium/stadium.routes.js";
+import bookingRoutes from "./modules/booking/booking.routes.js";
+import reviewRoutes from "./modules/review/review.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
+import notificationRoutes from "./modules/notifications/notifications.routes.js";
+import conversationsRoutes from "./modules/conversation/conversation.routes.js";
+import helmet from "helmet";
+import { swaggerSpec } from "./config/swagger.js";
+import imageRoutes from "./modules/image/image.routes.js";
 
 const app = express();
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  }),
+);
 
-// app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
-
 app.get("/health", (_req, res) => {
   res.status(200).json({
     status: "ok",
@@ -17,7 +35,13 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-
-app.use(errorHandler); // خاص يبقى آخر middleware
+app.use("/api/stadiums", stadiumRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/stadiums/:stadiumId/images", imageRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/conversations", conversationsRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use(errorHandler);
 
 export default app;
