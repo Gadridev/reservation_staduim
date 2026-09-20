@@ -2,6 +2,8 @@ import { Router } from "express";
 import { getMe, login, register,updatePassword, updateUser } from "./auth.controller.js";
 import { loginSchema, registerSchema, updatePasswordSchema, updateUserSchema } from "./auth.validation.js";
 import { validate } from "../../shared/middleware/validate.js";
+import { authenticate } from "../../shared/middleware/authenticate.js";
+import { authorize } from "../../shared/middleware/authorize.js";
 
 const router = Router();
 
