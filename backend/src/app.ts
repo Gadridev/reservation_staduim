@@ -1,23 +1,32 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
-// import cors from "cors";
+import cors from "cors";
+import helmet from "helmet";
 import authRoutes from "./modules/auth/auth.routes.js";
 import { errorHandler } from "./shared/errors/errorHandler.js";
 import stadiumRoutes from "./modules/stadium/stadium.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import reviewRoutes from "./modules/review/review.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
-import notificationRoutes from "./modules/notifications/notifications.routes.js";
 
 
 import { swaggerSpec } from "./config/swagger.js";
 import imageRoutes from "./modules/image/image.routes.js";
 
 const app = express();
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  }),
+);
 
-// app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
-
 app.get("/health", (_req, res) => {
   res.status(200).json({
     status: "ok",
