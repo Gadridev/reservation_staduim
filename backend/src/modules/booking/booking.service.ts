@@ -223,3 +223,193 @@ export async function ownerDashboard(ownerId: mongoose.Types.ObjectId) {
     recentBookings,
   };
 }
+
+interface AuthUser {
+  _id: mongoose.Types.ObjectId;
+  role: "PLAYER" | "OWNER" | "ADMIN";
+}
+
+export async function getBookingById(bookingId: string, user: AuthUser) {
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  if (user.role === "PLAYER") {
+    if (booking.playerId.toString() !== user._id.toString()) {
+      throw new AppError("You do not have permission to view this booking", 403);
+    }
+  } else if (user.role === "OWNER") {
+    const stadium = await Stadium.findById(booking.stadiumId);
+    if (!stadium || stadium.ownerId.toString() !== user._id.toString()) {
+      throw new AppError("You do not have permission to view this booking", 403);
+    }
+  }
+
+  await booking.populate([
+    { path: "stadiumId", select: "name" },
+    { path: "playerId", select: "firstName lastName" },
+  ]);
+
+  return booking;
+}
+
+export async function getMyBookings(playerId: mongoose.Types.ObjectId, query: BookingListQuery) {
+  const filter: Record<string, unknown> = { playerId };
+  if (query.status) filter.status = query.status;
+
+  const skip = (query.page - 1) * query.limit;
+
+  const [bookings, total] = await Promise.all([
+    Booking.find(filter)
+      .sort({ startAt: -1 })
+      .skip(skip)
+      .limit(query.limit)
+      .populate("stadiumId", "name"),
+    Booking.countDocuments(filter),
+  ]);
+
+  return {
+    bookings,
+    pagination: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.max(Math.ceil(total / query.limit), 1),
+    },
+  };
+}
+
+export async function getStadiumBookings(
+  stadiumId: string,
+  user: AuthUser,
+  query: BookingListQuery
+) {
+  if (!mongoose.Types.ObjectId.isValid(stadiumId)) {
+    throw new AppError("Stadium not found", 404);
+  }
+
+  const stadium = await Stadium.findById(stadiumId);
+  if (!stadium) {
+    throw new AppError("Stadium not found", 404);
+  }
+
+  if (user.role === "OWNER" && stadium.ownerId.toString() !== user._id.toString()) {
+    throw new AppError("You do not have permission to view bookings for this stadium", 403);
+  }
+
+  const filter: Record<string, unknown> = { stadiumId: stadium._id };
+  if (query.status) filter.status = query.status;
+
+  const skip = (query.page - 1) * query.limit;
+
+  const [bookings, total] = await Promise.all([
+    Booking.find(filter)
+      .sort({ startAt: -1 })
+      .skip(skip)
+      .limit(query.limit)
+      .populate("playerId", "firstName lastName"),
+    Booking.countDocuments(filter),
+  ]);
+
+  return {
+    bookings,
+    pagination: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.max(Math.ceil(total / query.limit), 1),
+    },
+  };
+}
+
+export async function cancelBooking(
+  bookingId: string,
+  user: AuthUser,
+  input: CancelBookingInput
+) {
+  if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  const booking = await Booking.findById(bookingId);
+  if (!booking) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  if (user.role === "PLAYER") {
+    if (booking.playerId.toString() !== user._id.toString()) {
+      throw new AppError("You do not have permission to cancel this booking", 403);
+    }
+  } else if (user.role === "OWNER") {
+    throw new AppError("You do not have permission to cancel this booking", 403);
+  }
+
+  if (booking.status === "CANCELLED") {
+    throw new AppError("This booking is already cancelled", 409);
+  }
+  if (booking.status === "COMPLETED") {
+    throw new AppError("Completed bookings cannot be cancelled", 409);
+  }
+
+  if (user.role === "PLAYER") {
+    const deadline = new Date(
+      booking.startAt.getTime() - BOOKING_RULES.CANCELLATION_DEADLINE_HOURS * 60 * 60 * 1000
+    );
+    if (Date.now() > deadline.getTime()) {
+      throw new AppError(
+        "Bookings can only be cancelled at least 2 hours before the start time",
+        400
+      );
+    }
+  }
+
+  booking.status = "CANCELLED";
+  booking.cancelledAt = new Date();
+  booking.cancelledBy = user._id;
+  booking.cancellationReason = input.reason;
+  await booking.save();
+
+  try {
+    const stadium = await Stadium.findById(booking.stadiumId);
+    const recipientId = user.role === "ADMIN" ? booking.playerId : stadium?.ownerId;
+    if (recipientId) {
+      await createNotification({
+        recipientId,
+        type: "BOOKING_CANCELLED",
+        title: "Booking cancelled",
+        message: user.role === "ADMIN"
+          ? "Your booking was cancelled by an administrator"
+          : "A booking for your stadium was cancelled",
+        relatedEntityType: "BOOKING",
+        relatedEntityId: booking._id,
+      });
+    }
+  } catch (err) {
+    console.error("Failed to send booking cancellation notification", booking._id, err);
+  }
+
+  return booking;
+}
+
+export async function completeExpiredBookings(): Promise<number> {
+  const now = new Date();
+  const result = await Booking.updateMany(
+    {
+      status: "CONFIRMED",
+      endAt: { $lte: now },
+    },
+    {
+      $set: {
+        status: "COMPLETED",
+        completedAt: now,
+      },
+    }
+  );
+
+  return result.modifiedCount;
+}
