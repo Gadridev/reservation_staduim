@@ -5,6 +5,7 @@ import {
   getBookingById,
   getMyBookings,
   getStadiumBookings,
+  ownerDashboard,
 } from "./booking.controller.js";
 import { authenticate } from "../../shared/middleware/authenticate.js";
 import { authorize } from "../../shared/middleware/authorize.js";
@@ -65,6 +66,7 @@ const router = Router();
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
 router.post("/", authenticate, authorize("PLAYER"), validate(createBookingSchema), createBooking);
+router.get("/dashboard/owner", authenticate, authorize("OWNER"), ownerDashboard);
 
 /**
  * @openapi
