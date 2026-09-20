@@ -25,14 +25,16 @@ export async function createBooking(
 
   const startAt = input.startAt;
 
-  // 6. startAt is not in the past
   const now = new Date();
-  //convert time to minute
-  const nowInMinutes = now.getHours() * 60 + now.getMinutes();
-  const startAtInMinutes = startAt.getHours() * 60 + startAt.getMinutes();
-
-  if (startAtInMinutes < nowInMinutes) {
+  if (startAt.getTime() <= now.getTime()) {
     throw new AppError("Booking time must be in the future", 400);
+  }
+  if (
+    startAt.getMinutes() !== 0 ||
+    startAt.getSeconds() !== 0 ||
+    startAt.getMilliseconds() !== 0
+  ) {
+    throw new AppError("Booking must start on an exact hour", 400);
   }
 
   // 7. startAt is within the next N days
@@ -124,4 +126,72 @@ export async function createBooking(
 
   // 15. Return booking
   return booking;
+}
+
+export async function ownerDashboard(ownerId: mongoose.Types.ObjectId) {
+  const stadiums = await Stadium.find({ ownerId }).select("_id");
+  const stadiumIds = stadiums.map((stadium) => stadium._id);
+  const now = new Date();
+  const dayStart = new Date(now);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(now);
+  dayEnd.setHours(23, 59, 59, 999);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  const [todaysBookings, upcomingBookings, cancelledThisMonth, revenueResult] =
+    await Promise.all([
+      Booking.countDocuments({
+        stadiumId: { $in: stadiumIds },
+        status: "CONFIRMED",
+        startAt: { $gte: dayStart, $lte: dayEnd },
+      }),
+      Booking.countDocuments({
+        stadiumId: { $in: stadiumIds },
+        status: "CONFIRMED",
+        startAt: { $gt: now },
+      }),
+      Booking.countDocuments({
+        stadiumId: { $in: stadiumIds },
+        status: "CANCELLED",
+        cancelledAt: { $gte: monthStart, $lt: nextMonthStart },
+      }),
+      Booking.aggregate([
+        {
+          $match: {
+            stadiumId: { $in: stadiumIds },
+            status: "COMPLETED",
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$price" } } },
+      ]),
+    ]);
+
+  const todayBookings = await Booking.find({
+    stadiumId: { $in: stadiumIds },
+    status: "CONFIRMED",
+    startAt: { $gte: dayStart, $lte: dayEnd },
+  })
+    .populate("playerId", "firstName lastName")
+    .populate("stadiumId", "name")
+    .sort({ startAt: 1 });
+  const recentBookings = await Booking.find({
+    stadiumId: { $in: stadiumIds },
+  })
+    .populate("playerId", "firstName lastName")
+    .populate("stadiumId", "name")
+    .sort({ createdAt: -1 })
+    .limit(5);
+
+  return {
+    stats: {
+      todaysBookings,
+      upcomingBookings,
+      cancelledThisMonth,
+      totalRevenue: revenueResult[0]?.total ?? 0,
+      currency: "MAD",
+    },
+    todayBookings,
+    recentBookings,
+  };
 }

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createBooking } from "./booking.controller.js";
+import { createBooking, ownerDashboard } from "./booking.controller.js";
 import { authenticate } from "../../shared/middleware/authenticate.js";
 import { authorize } from "../../shared/middleware/authorize.js";
 import { validate } from "../../shared/middleware/validate.js";
@@ -58,4 +58,5 @@ const router = Router();
  *             schema: { $ref: '#/components/schemas/ErrorResponse' }
  */
 router.post("/", authenticate, authorize("PLAYER"), validate(createBookingSchema), createBooking);
+router.get("/dashboard/owner", authenticate, authorize("OWNER"), ownerDashboard);
 export default router;
