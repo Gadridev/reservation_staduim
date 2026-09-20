@@ -9,6 +9,7 @@ import type {
   ConversationListQuery,
   MessageListQuery,
 } from "./conversation.validation.js";
+import { createNotification } from "../notifications/notifications.service.js";
 
 interface AuthUser {
   _id: mongoose.Types.ObjectId;
@@ -17,7 +18,7 @@ interface AuthUser {
 
 export async function findConversationAndVerifyAccess(
   conversationId: string,
-  user: AuthUser
+  user: AuthUser,
 ) {
   if (!mongoose.Types.ObjectId.isValid(conversationId)) {
     throw new AppError("Conversation not found", 404);
@@ -34,7 +35,10 @@ export async function findConversationAndVerifyAccess(
     conversation.ownerId.toString() === user._id.toString();
 
   if (!isParticipant) {
-    throw new AppError("You do not have permission to access this conversation", 403);
+    throw new AppError(
+      "You do not have permission to access this conversation",
+      403,
+    );
   }
 
   return conversation;
@@ -42,7 +46,7 @@ export async function findConversationAndVerifyAccess(
 
 export async function createOrGetConversation(
   playerId: mongoose.Types.ObjectId,
-  input: CreateConversationInput
+  input: CreateConversationInput,
 ) {
   if (!mongoose.Types.ObjectId.isValid(input.stadiumId)) {
     throw new AppError("Stadium not found", 404);
@@ -63,7 +67,7 @@ export async function createOrGetConversation(
   if (!hasEligibleBooking) {
     throw new AppError(
       "You must have a confirmed or completed booking with this stadium to start a conversation",
-      403
+      403,
     );
   }
 
@@ -101,7 +105,7 @@ export async function createOrGetConversation(
 
 export async function getMyConversations(
   user: AuthUser,
-  query: ConversationListQuery
+  query: ConversationListQuery,
 ) {
   const filter = {
     $or: [{ playerId: user._id }, { ownerId: user._id }],
@@ -131,8 +135,14 @@ export async function getMyConversations(
   };
 }
 
-export async function getConversationById(conversationId: string, user: AuthUser) {
-  const conversation = await findConversationAndVerifyAccess(conversationId, user);
+export async function getConversationById(
+  conversationId: string,
+  user: AuthUser,
+) {
+  const conversation = await findConversationAndVerifyAccess(
+    conversationId,
+    user,
+  );
 
   await conversation.populate([
     { path: "stadiumId", select: "name" },
@@ -146,15 +156,42 @@ export async function getConversationById(conversationId: string, user: AuthUser
 export async function sendMessage(
   conversationId: string,
   user: AuthUser,
-  input: SendMessageInput
+  input: SendMessageInput,
 ) {
-  const conversation = await findConversationAndVerifyAccess(conversationId, user);
+  const conversation = await findConversationAndVerifyAccess(
+    conversationId,
+    user,
+  );
 
   const message = await Message.create({
     conversationId: conversation._id,
     senderId: user._id,
     content: input.content,
   });
+  const recipientId =
+    conversation.playerId.toString() === user._id.toString()
+      ? conversation.ownerId
+      : conversation.playerId;
+
+  try {
+    await createNotification({
+      recipientId,
+      type: "NEW_MESSAGE",
+      title: "New message",
+      message:
+        input.content.length > 100
+          ? `${input.content.slice(0, 100)}...`
+          : input.content,
+      relatedEntityType: "CONVERSATION",
+      relatedEntityId: conversation._id,
+    });
+  } catch (err) {
+    console.error(
+      "Failed to send NEW_MESSAGE notification for message",
+      message._id,
+      err,
+    );
+  }
 
   return message;
 }
@@ -162,9 +199,12 @@ export async function sendMessage(
 export async function getConversationMessages(
   conversationId: string,
   user: AuthUser,
-  query: MessageListQuery
+  query: MessageListQuery,
 ) {
-  const conversation = await findConversationAndVerifyAccess(conversationId, user);
+  const conversation = await findConversationAndVerifyAccess(
+    conversationId,
+    user,
+  );
 
   const filter = { conversationId: conversation._id };
   const skip = (query.page - 1) * query.limit;
