@@ -1,14 +1,13 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
-// import cors from "cors";
+import cors from "cors";
+import helmet from "helmet";
 import authRoutes from "./modules/auth/auth.routes.js";
 import { errorHandler } from "./shared/errors/errorHandler.js";
 import stadiumRoutes from "./modules/stadium/stadium.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import reviewRoutes from "./modules/review/review.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
-
-
 import { swaggerSpec } from "./config/swagger.js";
 import imageRoutes from "./modules/image/image.routes.js";
 
