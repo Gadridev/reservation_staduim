@@ -3,6 +3,7 @@ import { User } from "../auth/auth.model.js";
 import { AppError } from "../../shared/errors/AppError.js";
 import type { ListUsersQuery, DeactivateUserInput } from "./admin.validation.js";
 import { AdminAction } from "./admin.model.js";
+import { createNotification } from "../notifications/notifications.service.js";
 
 async function findUserOrThrow(userId: string) {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -83,6 +84,19 @@ export async function deactivateUser(
     throw err;
   }
 
+  try {
+    await createNotification({
+      recipientId: user._id,
+      type: "ACCOUNT_DEACTIVATED",
+      title: "Account deactivated",
+      message: `Your account has been deactivated. Reason: ${input.reason}`,
+      relatedEntityType: "USER",
+      relatedEntityId: user._id,
+    });
+  } catch (err) {
+    console.error("Failed to send account deactivation notification", user._id, err);
+  }
+
   return user;
 }
 
@@ -116,6 +130,19 @@ export async function activateUser(adminId: mongoose.Types.ObjectId, userId: str
     user.isActive = false;
     await user.save().catch(() => {});
     throw err;
+  }
+
+  try {
+    await createNotification({
+      recipientId: user._id,
+      type: "ACCOUNT_ACTIVATED",
+      title: "Account activated",
+      message: "Your account has been reactivated. You can now use the platform normally.",
+      relatedEntityType: "USER",
+      relatedEntityId: user._id,
+    });
+  } catch (err) {
+    console.error("Failed to send account activation notification", user._id, err);
   }
 
   return user;

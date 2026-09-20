@@ -23,7 +23,6 @@ export function registerConversationHandlers(io: AppServer, socket: AppSocket) {
         return emitSocketError(socket, "conversationId is required");
       }
 
-      // نفس منطق الصلاحية بالضبط المستعمل فـ REST — بلا تكرار
       await findConversationAndVerifyAccess(conversationId, authUser);
 
       socket.join(conversationRoom(conversationId));
@@ -37,7 +36,6 @@ export function registerConversationHandlers(io: AppServer, socket: AppSocket) {
     const conversationId = payload?.conversationId;
     if (!conversationId) return;
 
-    // socket.leave() على room ماشي منضم ليها هي no-op آمنة — بلا حاجة لتحقق إضافي
     socket.leave(conversationRoom(conversationId));
     socket.emit("left_conversation", { conversationId });
   });
@@ -53,11 +51,8 @@ export function registerConversationHandlers(io: AppServer, socket: AppSocket) {
 
         const parsed = sendMessageSchema.safeParse({ content: payload?.content });
         if (!parsed.success) {
-          return emitSocketError(socket, parsed.error.issues[0].message);
+          return emitSocketError(socket, parsed.error.issues[0]?.message || "Invalid message content");
         }
-
-        // نفس service function المستعملة فـ POST /conversations/:id/messages —
-        // كتدير التحقق من الصلاحية + الحفظ فـ MongoDB فـ نفس الوقت
         const message = await sendMessageService(conversationId, authUser, parsed.data);
 
         io.to(conversationRoom(conversationId)).emit("new_message", message);
@@ -68,6 +63,6 @@ export function registerConversationHandlers(io: AppServer, socket: AppSocket) {
   );
 
   socket.on("disconnect", () => {
-    // Socket.IO كيسير حيدان الـ socket من الـ rooms تلقائيا عند disconnect — بلا حاجة لمنطق إضافي دابا
+    console.log(`Socket disconnected: ${socket.id}`);
   });
 }

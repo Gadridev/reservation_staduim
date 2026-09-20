@@ -6,6 +6,7 @@ import { BOOKING_RULES } from "../../shared/constants/bookingRules.js";
 import type { CancelBookingInput, CreateBookingInput } from "./booking.validation.js";
 import { toTimeString } from "../../utils/date.js";
 import type { BookingListQuery } from "./booking.validation.js";
+import { createNotification } from "../notifications/notifications.service.js";
 
 
 
@@ -122,6 +123,32 @@ export async function createBooking(
     currency: "MAD",
     status: "CONFIRMED",
   });
+
+  try {
+    await createNotification({
+      recipientId: stadium.ownerId,
+      type: "NEW_BOOKING",
+      title: "New booking",
+      message: `You have a new booking for ${stadium.name} on ${startAt.toDateString()}`,
+      relatedEntityType: "BOOKING",
+      relatedEntityId: booking._id,
+    });
+  } catch (err) {
+    console.error("Failed to send new booking notification", booking._id, err);
+  }
+
+  try {
+    await createNotification({
+      recipientId: playerId,
+      type: "BOOKING_CONFIRMED",
+      title: "Booking confirmed",
+      message: `Your booking for ${stadium.name} has been confirmed`,
+      relatedEntityType: "BOOKING",
+      relatedEntityId: booking._id,
+    });
+  } catch (err) {
+    console.error("Failed to send booking confirmation notification", booking._id, err);
+  }
 
   // 15. Return booking
   return booking;
@@ -288,6 +315,25 @@ export async function cancelBooking(
   booking.cancellationReason = input.reason;
 
   await booking.save();
+
+  try {
+    const stadium = await Stadium.findById(booking.stadiumId);
+    const recipientId = user.role === "ADMIN" ? booking.playerId : stadium?.ownerId;
+    if (recipientId) {
+      await createNotification({
+        recipientId,
+        type: "BOOKING_CANCELLED",
+        title: "Booking cancelled",
+        message: user.role === "ADMIN"
+          ? "Your booking was cancelled by an administrator"
+          : "A booking for your stadium was cancelled",
+        relatedEntityType: "BOOKING",
+        relatedEntityId: booking._id,
+      });
+    }
+  } catch (err) {
+    console.error("Failed to send booking cancellation notification", booking._id, err);
+  }
 
   return booking;
 }
