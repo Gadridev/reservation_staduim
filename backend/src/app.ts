@@ -34,7 +34,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/stadiums/:stadiumId/images", imageRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/notifications", notificationRoutes);
+app.use("/api/notifications", notificationRoutes);  
 
 app.use(errorHandler);
 
