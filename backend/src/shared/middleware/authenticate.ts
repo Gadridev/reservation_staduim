@@ -7,9 +7,9 @@ import { verifyToken } from "../../utils/jwt.js";
 export async function authenticate(
   req: Request,
   _res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
-  console.log("enter")
+  console.log("enter");
   try {
     const authHeader = req.headers.authorization;
 
@@ -27,9 +27,11 @@ export async function authenticate(
     }
 
     const user = await User.findById(payload.userId);
-
     if (!user) {
       throw new AppError("User no longer exists", 401);
+    }
+    if (!user.isActive) {
+      throw new AppError("Your account is inactive", 403);
     }
 
     req.user = user;

@@ -11,7 +11,7 @@ import type { UpdateWorkingHoursInput } from "./stadium.validation.js";
 import * as mongoose from "mongoose";
 
 export async function createStadium(
-  ownerId: mongoose.Types.ObjectId,
+    ownerId: mongoose.Types.ObjectId,
   input: CreateStadiumInput,
 ) {
   const existingStadium = await Stadium.findOne({

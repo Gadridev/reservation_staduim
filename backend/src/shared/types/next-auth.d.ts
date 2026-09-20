@@ -4,8 +4,9 @@ declare global {
   namespace Express {
     interface Request {
       user?: IUser;
+      validatedQuery?: Record<string, unknown>;
     }
   }
 }
 
-export {};  
+export {};
