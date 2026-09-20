@@ -90,4 +90,4 @@ export const updateWorkingHoursSchema = z
 export type UpdateWorkingHoursInput = z.infer<typeof updateWorkingHoursSchema>;
 
 export type CreateStadiumInput = z.infer<typeof createStadiumSchema>;
-export type UpdateStadiumInput = z.infer<typeof updateStadiumSchema>;
+export type UpdateStadiumInput = z.infer<typeof updateStadiumSchema>; 
