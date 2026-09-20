@@ -28,3 +28,4 @@ export const cancelBookingSchema = z
 export type BookingListQuery = z.infer<typeof bookingListQuerySchema>;
 export type CancelBookingInput = z.infer<typeof cancelBookingSchema>;
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
+
