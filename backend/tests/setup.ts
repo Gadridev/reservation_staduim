@@ -1,8 +1,13 @@
 import dotenv from "dotenv";
+import { createServer } from "http";
 import mongoose from "mongoose";
+import app from "../src/app.js";
+import { initializeSocketServer } from "../src/socket/socket.server.js";
+import type { AppServer } from "../src/socket/socket.types.js";
 
 dotenv.config();
 
+let testIO: AppServer;
 beforeAll(async () => {
   const uri = process.env.MONGODB_URI_TEST;
 
@@ -11,6 +16,7 @@ beforeAll(async () => {
   }
 
   await mongoose.connect(uri);
+  testIO = initializeSocketServer(createServer(app));
 });
 
 afterEach(async () => {
@@ -21,5 +27,6 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  testIO?.close();
   await mongoose.connection.close();
 });

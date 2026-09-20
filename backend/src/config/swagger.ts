@@ -118,15 +118,42 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
-      },
-    },
-    Pagination: {
-      type: "object",
-      properties: {
-        page: { type: "integer", example: 1 },
-        limit: { type: "integer", example: 10 },
-        total: { type: "integer", example: 23 },
-        totalPages: { type: "integer", example: 3 },
+        Pagination: {
+          type: "object",
+          properties: {
+            page: { type: "integer", example: 1 },
+            limit: { type: "integer", example: 10 },
+            total: { type: "integer", example: 23 },
+            totalPages: { type: "integer", example: 3 },
+          },
+        },
+        Notification: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            recipientId: { type: "string" },
+            type: {
+              type: "string",
+              enum: [
+                "NEW_BOOKING",
+                "BOOKING_CANCELLED",
+                "NEW_MESSAGE",
+                "ACCOUNT_DEACTIVATED",
+                "ACCOUNT_ACTIVATED",
+                "BOOKING_CONFIRMED",
+              ],
+            },
+            title: { type: "string" },
+            message: { type: "string" },
+            relatedEntityType: {
+              type: "string",
+              enum: ["BOOKING", "CONVERSATION", "USER"],
+            },
+            relatedEntityId: { type: "string" },
+            isRead: { type: "boolean" },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
       },
     },
     Review: {
