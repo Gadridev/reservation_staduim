@@ -8,6 +8,7 @@ import stadiumRoutes from "./modules/stadium/stadium.routes.js";
 import bookingRoutes from "./modules/booking/booking.routes.js";
 import reviewRoutes from "./modules/review/review.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
+import notificationRoutes from "./modules/notifications/notifications.routes.js";
 
 
 import { swaggerSpec } from "./config/swagger.js";
