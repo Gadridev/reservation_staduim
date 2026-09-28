@@ -333,7 +333,7 @@ export async function cancelBooking(
   input: CancelBookingInput
 ) {
   if (!mongoose.Types.ObjectId.isValid(bookingId)) {
-    throw new AppError("Booking not found", 404);
+    throw new AppError("Invalid booking ID", 400);
   }
 
   const booking = await Booking.findById(bookingId);

@@ -1,5 +1,5 @@
 import type { Stadium } from "../../types";
-import { MapListCard } from "./MapListCard";
+import { StadiumListCard } from "./MapListCard";
 
 interface MapSidebarListProps {
   stadiums: Stadium[];
@@ -11,11 +11,11 @@ export function MapSidebarList({ stadiums, selectedId, onSelect }: MapSidebarLis
   return (
     <div className="flex flex-col gap-2.5 lg:max-h-[640px] lg:overflow-y-auto lg:pr-1">
       {stadiums.map((stadium) => (
-        <MapListCard
-          key={stadium.id}
+        <StadiumListCard
+          key={stadium._id}
           stadium={stadium}
-          isActive={stadium.id === selectedId}
-          onClick={() => onSelect(stadium.id)}
+          isSelected={stadium._id === selectedId}
+          onClick={() => onSelect(stadium._id)}
         />
       ))}
     </div>

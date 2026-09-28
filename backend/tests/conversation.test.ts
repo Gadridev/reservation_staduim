@@ -157,7 +157,6 @@ describe("GET /api/conversations", () => {
 describe("GET /api/conversations/:conversationId", () => {
   it("allows a participant PLAYER to access the conversation", async () => {
     const { playerToken, owner, stadium, player } = await setupEligiblePlayer();
-    console.log(playerToken)
     const conversation = await createTestConversation(player._id, owner._id, stadium._id);
 
     const res = await request(app)

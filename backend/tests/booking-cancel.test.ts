@@ -1,4 +1,5 @@
 import request from "supertest";
+import { jest } from "@jest/globals";
 import app from "../src/app.js";
 import { Booking } from "../src/modules/booking/booking.model.js";
 import { createTestUser, createTestStadium, createTestBooking } from "./helpers.js";
@@ -135,18 +136,25 @@ describe("PATCH /api/bookings/:bookingId/cancel", () => {
   });
 
   it("allows PLAYER to cancel exactly 2 hours before start", async () => {
+    const now = Date.now();
     const { user: owner } = await createTestUser("OWNER");
     const { user: player, token } = await createTestUser("PLAYER");
     const stadium = await createTestStadium(owner._id);
     const booking = await createTestBooking(player._id, stadium._id, {
-      startAt: hoursFromNow(2),
-      endAt: hoursFromNow(3),
+      startAt: new Date(now + 2 * 60 * 60 * 1000),
+      endAt: new Date(now + 3 * 60 * 60 * 1000),
     });
 
-    const res = await request(app)
-      .patch(`/api/bookings/${booking._id}/cancel`)
-      .set("Authorization", `Bearer ${token}`)
-      .send({ reason: "Cancelling right at the deadline" });
+    const dateNowSpy = jest.spyOn(Date, "now").mockReturnValue(now);
+    let res;
+    try {
+      res = await request(app)
+        .patch(`/api/bookings/${booking._id}/cancel`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ reason: "Cancelling right at the deadline" });
+    } finally {
+      dateNowSpy.mockRestore();
+    }
 
     expect(res.status).toBe(200);
   });
@@ -311,7 +319,9 @@ describe("PATCH /api/bookings/:bookingId/cancel", () => {
     const { token: tokenB } = await createTestUser("PLAYER");
     const stadium = await createTestStadium(owner._id);
 
-    const startAt = hoursFromNow(5);
+    const startAt = new Date();
+    startAt.setDate(startAt.getDate() + 1);
+    startAt.setHours(12, 0, 0, 0);
     const booking = await createTestBooking(playerA._id, stadium._id, {
       startAt,
       endAt: new Date(startAt.getTime() + 60 * 60 * 1000),

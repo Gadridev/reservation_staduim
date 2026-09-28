@@ -12,6 +12,9 @@ const { default: app } = await import("../src/app.js");
 const request = (await import("supertest")).default;
 const { Image } = await import("../src/modules/image/image.model.js");
 const { createTestUser, createTestStadium } = await import("./helpers.js");
+const { DEFAULT_STADIUM_IMAGES } = await import(
+  "../src/shared/constants/defaultStadiumImages.js"
+);
 
 function fakeImageBuffer(): Buffer {
   // 1x1 PNG صغيرة، كافية لـ multer/tests (بلا حاجة لملف حقيقي على القرص)
@@ -125,7 +128,7 @@ describe("POST /api/stadiums/:stadiumId/images", () => {
 });
 
 describe("GET /api/stadiums/:stadiumId/images", () => {
-  it("returns 3 default images when the stadium has no real images", async () => {
+  it("returns the configured default images when the stadium has no real images", async () => {
     const { user: owner } = await createTestUser("OWNER");
     const stadium = await createTestStadium(owner._id);
 
@@ -133,7 +136,7 @@ describe("GET /api/stadiums/:stadiumId/images", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.isDefault).toBe(true);
-    expect(res.body.data).toHaveLength(3);
+    expect(res.body.data).toHaveLength(DEFAULT_STADIUM_IMAGES.length);
   });
 
   it("returns only real images once at least one has been uploaded", async () => {
@@ -324,7 +327,7 @@ describe("DELETE /api/stadiums/:stadiumId/images/:imageId", () => {
     const res = await request(app).get(`/api/stadiums/${stadium._id}/images`);
 
     expect(res.body.isDefault).toBe(true);
-    expect(res.body.data).toHaveLength(3);
+    expect(res.body.data).toHaveLength(DEFAULT_STADIUM_IMAGES.length);
   });
 
   it("rejects deleting an image belonging to another stadium", async () => {
