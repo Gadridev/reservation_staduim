@@ -13,10 +13,10 @@ import { useReviewsStadium } from "../features/stadium/hooks/useReviewStadium";
 import { StadiumDetailSkeleton } from "../features/stadium/components/StadiumDetailSkeleton";
 
 export function StadiumDetailPage() {
-  const { stadiumId } = useParams<{ stadiumId: string }>();
-  const {isLoading,data}=useStadium(stadiumId as string)
-  const {isLoading:isImage,data:image}=useImageStadium(stadiumId as string)
-  const {isLoading:isReviewing,data:reviews}=useReviewsStadium(stadiumId as string)
+  const stadiumId = useParams<{ stadiumId: string }>().stadiumId ?? "";
+  const {isLoading,data}=useStadium(stadiumId)
+  const {isLoading:isImage,data:image}=useImageStadium(stadiumId)
+  const {isLoading:isReviewing,data:reviews}=useReviewsStadium(stadiumId)
   if(isLoading || isImage || isReviewing){
     return <StadiumDetailSkeleton />
   }
@@ -47,7 +47,7 @@ export function StadiumDetailPage() {
       </Link>
 
       <div className="mb-6">
-        <StadiumGallery images={image} />
+        <StadiumGallery images={image ?? []} />
       </div>
 
       <div className="grid grid-cols-1 items-start gap-9 lg:grid-cols-[1.7fr_1fr]">
@@ -63,7 +63,7 @@ export function StadiumDetailPage() {
 
           <p className="mb-7 text-[14.5px] leading-relaxed text-ink/85">{stadium.description}</p>
 
-          <WorkingHoursTable hours={stadium.workingHours} />
+          <WorkingHoursTable hours={stadium.workingHours ?? []} />
 
           <PolicyNotice title="Cancellation policy">Free cancellation up to 2 hours before kickoff. Cancellations within 2 hours may be charged according to Malaab's cancellation policy</PolicyNotice>
 

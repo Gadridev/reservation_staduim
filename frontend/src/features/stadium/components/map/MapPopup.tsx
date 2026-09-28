@@ -17,11 +17,13 @@ export function MapPopup({ stadium, top, left }: MapPopupProps) {
       <div className="p-3">
         <h4 className="mb-1 text-[14px] font-bold text-ink">{stadium.name}</h4>
         <div className="mb-2 flex items-center justify-between text-xs text-ink-soft">
-          <span className="font-mono font-semibold text-amber-deep">★ {stadium.rating}</span>
-          <span>{stadium.distanceKm} km away</span>
+          <span className="font-mono font-semibold text-amber-deep">
+            ★ {stadium.averageRating > 0 ? stadium.averageRating.toFixed(1) : "New"}
+          </span>
+          <span>{stadium.location.city}</span>
         </div>
         <Link
-          to={`/stadiums/${stadium.id}`}
+          to={`/stadiums/${stadium._id}`}
           className="block rounded-lg bg-pitch-dark py-2 text-center text-xs font-bold text-cream hover:bg-pitch"
         >
           View stadium

@@ -1,6 +1,20 @@
-import type { Stadium } from "./types";
+import type { StadiumFacility } from "./types";
 
-export const mockStadiums: Stadium[] = [
+interface MockStadium {
+  id: string;
+  name: string;
+  city: string;
+  distanceKm: number;
+  pricePerHour: number;
+  rating: number;
+  reviewCount: number;
+  openUntil: string;
+  facilities: StadiumFacility[];
+  badge?: string;
+  isFavorite: boolean;
+}
+
+export const mockStadiums: MockStadium[] = [
   {
     id: "stade-al-wahda",
     name: "Stade Al Wahda",
